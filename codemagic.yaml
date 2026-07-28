@@ -13,14 +13,15 @@ workflows:
           if [ -f ../pubspec.yaml ]; then
             cp ../pubspec.yaml ./pubspec.yaml
           fi
-          # تعيين اسم التطبيق بالعربية (غمدان)
+          
+          # تغيير اسم التطبيق في الملف المباشر إلى (غمدان)
           sed -i '' 's/android:label="ghmdan_taxi"/android:label="غمدان"/g' android/app/src/main/AndroidManifest.xml || true
           
           flutter pub get
-          # بناء APK مضغوط ومحسّن لحجم أصغر (Split per ABI / Obfuscate)
-          flutter build apk --release --split-per-abi --tree-shake-icons
+          # بناء APK عالمي مضغوط ومستقر جداً
+          flutter build apk --release --tree-shake-icons
           
           mkdir -p ../build/app/outputs/flutter-apk
-          cp build/app/outputs/flutter-apk/*.apk ../build/app/outputs/flutter-apk/
+          cp build/app/outputs/flutter-apk/app-release.apk ../build/app/outputs/flutter-apk/
     artifacts:
-      - build/app/outputs/flutter-apk/*.apk
+      - build/app/outputs/flutter-apk/app-release.apk
