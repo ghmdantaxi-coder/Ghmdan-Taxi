@@ -1,16 +1,28 @@
 workflows:
   android-workflow:
-    name: Android App Build
+    name: Ghmdan Taxi Android Build
     max_build_duration: 30
     instance_type: mac_mini_m1
     scripts:
-      - name: Set up Flutter
+      - name: Create basic pubspec if missing
         script: |
-          cd lib
+          if [ ! -f pubspec.yaml ]; then
+            echo "name: ghmdan_taxi" > pubspec.yaml
+            echo "description: Ghmdan Taxi App" >> pubspec.yaml
+            echo "version: 1.0.0+1" >> pubspec.yaml
+            echo "environment:" >> pubspec.yaml
+            echo "  sdk: '>=3.0.0 <4.0.0'" >> pubspec.yaml
+            echo "dependencies:" >> pubspec.yaml
+            echo "  flutter:" >> pubspec.yaml
+            echo "    sdk: flutter" >> pubspec.yaml
+            echo "flutter:" >> pubspec.yaml
+            echo "  uses-material-design: true" >> pubspec.yaml
+          fi
+      - name: Get Flutter dependencies
+        script: |
           flutter pub get
       - name: Build Android APK
         script: |
-          cd lib
-          flutter build apk --release
+          flutter build apk --release --no-pub
     artifacts:
-      - lib/build/app/outputs/flutter-apk/*.apk
+      - build/app/outputs/flutter-apk/*.apk
