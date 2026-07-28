@@ -1,27 +1,13 @@
 workflows:
   android-workflow:
-    name: Ghmdan Taxi Optimized Build
+    name: Ghmdan Direct Build
     max_build_duration: 30
     instance_type: mac_mini_m1
     scripts:
-      - name: Reconstruct Light Flutter Project
+      - name: Build Flutter APK
         script: |
-          mkdir -p temp_app
-          cd temp_app
-          flutter create . --org com.ghmdan.taxi --project-name ghmdan_taxi
-          cp -r ../lib/. ./lib/
-          if [ -f ../pubspec.yaml ]; then
-            cp ../pubspec.yaml ./pubspec.yaml
-          fi
-          
-          # تغيير اسم التطبيق في الملف المباشر إلى (غمدان)
-          sed -i '' 's/android:label="ghmdan_taxi"/android:label="غمدان"/g' android/app/src/main/AndroidManifest.xml || true
-          
+          # تحديث الحزم وبناء ملف الـ APK مباشرة بدون إنشاء مشروع جديد
           flutter pub get
-          # بناء APK عالمي مضغوط ومستقر جداً
-          flutter build apk --release --tree-shake-icons
-          
-          mkdir -p ../build/app/outputs/flutter-apk
-          cp build/app/outputs/flutter-apk/app-release.apk ../build/app/outputs/flutter-apk/
+          flutter build apk --release
     artifacts:
-      - build/app/outputs/flutter-apk/app-release.apk
+      - build/app/outputs/flutter-apk/*.apk
