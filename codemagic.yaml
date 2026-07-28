@@ -1,14 +1,29 @@
 workflows:
   android-workflow:
-    name: Ghmdan Final Build
+    name: Ghmdan Clean Build
     max_build_duration: 30
     instance_type: mac_mini_m1
     scripts:
-      - name: Get Dependencies
+      - name: Generate Fresh Project And Build
         script: |
+          # إنشاء مشروع فلاتر جديد ونظيف كلياً يتوافق مع أحدث إصدارات Gradle
+          flutter create fresh_app --org com.ghmdan.taxi --project-name ghmdan_taxi
+          
+          # نسخ ملفات الأكواد الخاصة بك إلى المشروع الجديد
+          rm -rf fresh_app/lib
+          cp -r lib fresh_app/lib
+          
+          # الانتقال للمشروع الجديد وبناء الـ APK
+          cd fresh_app
+          
+          # تعيين اسم التطبيق بالعربية (غمدان)
+          sed -i '' 's/android:label="ghmdan_taxi"/android:label="غمدان"/g' android/app/src/main/AndroidManifest.xml || true
+          
           flutter pub get
-      - name: Build APK
-        script: |
-          flutter build apk --release
+          flutter build apk --release --tree-shake-icons
+          
+          # نقل ملف الـ APK النهائي للخارج لتتمكن من تحميله
+          mkdir -p ../build/app/outputs/flutter-apk
+          cp build/app/outputs/flutter-apk/*.apk ../build/app/outputs/flutter-apk/
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
