@@ -4,9 +4,12 @@ workflows:
     max_build_duration: 30
     instance_type: mac_mini_m1
     scripts:
+      - name: Verify Flutter Project Root
+        script: |
+          # التأكد من وجود ملف المشروع والتحقق من البيئة
+          flutter doctor
       - name: Build Flutter APK
         script: |
-          # تحديث الحزم وبناء ملف الـ APK مباشرة بدون إنشاء مشروع جديد
           flutter pub get
           flutter build apk --release
     artifacts:
