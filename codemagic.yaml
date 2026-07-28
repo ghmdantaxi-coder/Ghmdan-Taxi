@@ -13,6 +13,8 @@ workflows:
           if [ -f ../pubspec.yaml ]; then
             cp ../pubspec.yaml ./pubspec.yaml
           fi
+          # تغيير اسم التطبيق في AndroidManifest ليظهر بالعربية على الشاشة
+          sed -i '' 's/android:label="ghmdan_taxi"/android:label="كابتن غمدان"/g' android/app/src/main/AndroidManifest.xml || true
           flutter pub get
           flutter build apk --release
           mkdir -p ../build/app/outputs/flutter-apk
