@@ -4,25 +4,18 @@ workflows:
     max_build_duration: 30
     instance_type: mac_mini_m1
     scripts:
-      - name: Create basic pubspec if missing
+      - name: Reconstruct Flutter Android Project
         script: |
-          if [ ! -f pubspec.yaml ]; then
-            echo "name: ghmdan_taxi" > pubspec.yaml
-            echo "description: Ghmdan Taxi App" >> pubspec.yaml
-            echo "version: 1.0.0+1" >> pubspec.yaml
-            echo "environment:" >> pubspec.yaml
-            echo "  sdk: '>=3.0.0 <4.0.0'" >> pubspec.yaml
-            echo "dependencies:" >> pubspec.yaml
-            echo "  flutter:" >> pubspec.yaml
-            echo "    sdk: flutter" >> pubspec.yaml
-            echo "flutter:" >> pubspec.yaml
-            echo "  uses-material-design: true" >> pubspec.yaml
+          mkdir -p temp_app
+          cd temp_app
+          flutter create . --org com.ghmdan.taxi --project-name ghmdan_taxi
+          cp -r ../lib/. ./lib/
+          if [ -f ../pubspec.yaml ]; then
+            cp ../pubspec.yaml ./pubspec.yaml
           fi
-      - name: Get Flutter dependencies
-        script: |
           flutter pub get
-      - name: Build Android APK
-        script: |
-          flutter build apk --release --no-pub
+          flutter build apk --release
+          mkdir -p ../build/app/outputs/flutter-apk
+          cp build/app/outputs/flutter-apk/app-release.apk ../build/app/outputs/flutter-apk/
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
