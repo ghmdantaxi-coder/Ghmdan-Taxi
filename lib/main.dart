@@ -1,192 +1,160 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 
 void main() {
-  runApp(const GhmdanTaxiApp());
+  runApp(const GhamdanApp());
 }
 
-class GhmdanTaxiApp extends StatefulWidget {
-  const GhmdanTaxiApp({super.key});
+class GhamdanApp extends StatefulWidget {
+  const GhamdanApp({super.key});
 
   @override
-  State<GhmdanTaxiApp> createState() => _GhmdanTaxiAppState();
+  State<GhamdanApp> createState() => _GhamdanAppState();
 }
 
-class _GhmdanTaxiAppState extends State<GhmdanTaxiApp> {
+class _GhamdanAppState extends State<GhamdanApp> {
   bool isDarkMode = false;
-
-  void toggleTheme(bool value) {
-    setState(() {
-      isDarkMode = value;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'غمدان تاكسي - سرعة وأمان',
+      title: 'غمدان - Ghamdan',
       debugShowCheckedModeBanner: false,
       themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
       theme: ThemeData(
         primarySwatch: Colors.amber,
-        brightness: Brightness.light,
-        scaffoldBackgroundColor: const Color(0xFFFAFAFA),
+        scaffoldBackgroundColor: const Color(0xFFF5F5F5),
         fontFamily: 'Roboto',
       ),
       darkTheme: ThemeData(
-        primarySwatch: Colors.amber,
         brightness: Brightness.dark,
+        primarySwatch: Colors.amber,
         scaffoldBackgroundColor: const Color(0xFF121212),
       ),
-      home: DriverMainShell(
+      home: UberStyleMainScreen(
         isDarkMode: isDarkMode,
-        onThemeChanged: toggleTheme,
+        onThemeChanged: (val) => setState(() => isDarkMode = val),
       ),
     );
   }
 }
 
-class DriverMainShell extends StatefulWidget {
+class UberStyleMainScreen extends StatefulWidget {
   final bool isDarkMode;
   final ValueChanged<bool> onThemeChanged;
 
-  const DriverMainShell({
+  const UberStyleMainScreen({
     super.key,
     required this.isDarkMode,
     required this.onThemeChanged,
   });
 
   @override
-  State<DriverMainShell> createState() => _DriverMainShellState();
+  State<UberStyleMainScreen> createState() => _UberStyleMainScreenState();
 }
 
-class _DriverMainShellState extends State<DriverMainShell> {
-  int _currentIndex = 0;
-  bool isOnline = true;
-  bool isNetworkConnected = true; 
-  int pendingOfflineTrips = 2; 
-  bool destinationFilterActive = false;
+enum BookingState { selectService, setLocations, searchingDriver, tripActive }
+
+class _UberStyleMainScreenState extends State<UberStyleMainScreen> {
+  BookingState currentStage = BookingState.selectService;
   
-  String selectedCurrency = 'الريال اليمني (YER)';
-  String currentGPSLocation = 'جاري تحديد الموقع في صنعاء...';
+  String pickupLocation = 'موقعي الحالي (شارع الستين - صنعاء)';
+  String destinationLocation = '';
+  String selectedService = 'تاكسي سريع';
+  double estimatedFare = 2500.0;
+  String selectedCurrency = 'YER';
 
-  final Map<String, double> balances = {
-    'الريال اليمني (YER)': 45000.0,
-    'الريال السعودي (SAR)': 350.0,
-    'الدولار الأمريكي (USD)': 90.0,
-  };
-
-  @override
-  void initState() {
-    super.initState();
-    _determinePosition();
-  }
-
-  Future<void> _determinePosition() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) return;
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) return;
-    }
-    
-    if (permission == LocationPermission.deniedForever) return;
-
-    Position position = await Geolocator.getCurrentPosition();
-    setState(() {
-      currentGPSLocation = 'خط العرض: ${position.latitude.toStringAsFixed(4)} | خط الطول: ${position.longitude.toStringAsFixed(4)}';
-    });
-  }
+  final TextEditingController _destinationController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('غمدان تاكسي | سرعة وأمان', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
-          backgroundColor: Colors.amber,
-          iconTheme: const IconThemeData(color: Colors.black),
-          actions: [
-            IconButton(
-              icon: Icon(destinationFilterActive ? Icons.alt_route : Icons.alt_route_outlined),
-              color: destinationFilterActive ? Colors.deepOrange : Colors.black,
-              tooltip: 'طريق العودة',
-              onPressed: _showDestinationFilterDialog,
+        resizeToAvoidBottomInset: false,
+        body: Stack(
+          children: [
+            // 1. خريطة تفاعلية رئيسية مثل أوبـر خلف الواجهات
+            Positioned.fill(
+              child: CustomPaint(
+                painter: LiveUberMapPainter(stage: currentStage),
+              ),
             ),
-            IconButton(
-              icon: const Icon(Icons.notifications_none, color: Colors.black),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('لا توجد إشعارات جديدة حالياً')),
-                );
-              },
+
+            // 2. شريط البحث العلوي / القائمة
+            Positioned(
+              top: 50,
+              left: 16,
+              right: 16,
+              child: Row(
+                children: [
+                  Builder(
+                    builder: (ctx) => CircleAvatar(
+                      backgroundColor: Colors.black,
+                      child: IconButton(
+                        icon: const Icon(Icons.menu, color: Colors.amber),
+                        onPressed: () => Scaffold.of(ctx).openDrawer(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: widget.isDarkMode ? Colors.grey[900] : Colors.white,
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.location_on, color: Colors.red),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              pickupLocation,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // 3. النافذة السفلية المكونة لخيار الطلب مثل أوبـر تماماً
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: _buildBottomUberSheet(),
             ),
           ],
         ),
-
         drawer: Drawer(
           child: ListView(
             padding: EdgeInsets.zero,
             children: [
               const UserAccountsDrawerHeader(
-                decoration: BoxDecoration(color: Colors.amber),
-                accountName: Text('أبو غمدان (الكابتن)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
-                accountEmail: Text('رقم السائق: #10204 | باص نيسان', style: TextStyle(color: Colors.black87)),
+                decoration: BoxDecoration(color: Colors.black),
+                accountName: Text('غمدان للنقل والخدمات', style: TextStyle(color: Colors.amber, fontSize: 18, fontWeight: FontWeight.bold)),
+                accountEmail: Text('حساب العميل | صنعاء - اليمن', style: TextStyle(color: Colors.white70)),
                 currentAccountPicture: CircleAvatar(
-                  backgroundColor: Colors.black,
-                  child: Icon(Icons.person, size: 40, color: Colors.amber),
+                  backgroundColor: Colors.amber,
+                  child: Icon(Icons.local_taxi, size: 35, color: Colors.black),
                 ),
               ),
               ListTile(
-                leading: const Icon(Icons.signal_cellular_connected_no_internet_4_bar, color: Colors.orange),
-                title: const Text('حالة الاتصال والعمل بدون إنترنت'),
-                subtitle: Text('رحلات معلقة للمزامنة: $pendingOfflineTrips'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showOfflineStatusDialog();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.verified_user, color: Colors.amber),
-                title: const Text('توثيق الحساب والوثائق (KYC)'),
-                subtitle: const Text('الحالة: مفعّل ومتأكد'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showKYCModal();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.speed, color: Colors.amber),
-                title: const Text('عداد الشارع المباشر (Street Meter)'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showStreetMeterDialog();
-                },
+                leading: const Icon(Icons.history, color: Colors.amber),
+                title: const Text('سجل الرحلات السابق'),
+                onTap: () {},
               ),
               ListTile(
                 leading: const Icon(Icons.account_balance_wallet, color: Colors.amber),
-                title: const Text('المحفظة متعددة العملات'),
-                onTap: () {
-                  Navigator.pop(context);
-                  setState(() => _currentIndex = 1);
-                },
-              ),
-              const Divider(),
-              ListTile(
-                leading: const Icon(Icons.headset_mic, color: Colors.amber),
-                title: const Text('الدعم الفني والخدمة'),
-                onTap: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('خط الطوارئ والدعم الفني لشركة غمدان: 770000000')),
-                  );
-                },
+                title: const Text('المحفظة والرصيد'),
+                onTap: () {},
               ),
               SwitchListTile(
                 secondary: const Icon(Icons.dark_mode, color: Colors.amber),
@@ -197,537 +165,204 @@ class _DriverMainShellState extends State<DriverMainShell> {
             ],
           ),
         ),
-
-        body: Column(
-          children: [
-            if (!isNetworkConnected)
-              Container(
-                color: Colors.orange.shade800,
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: const [
-                        Icon(Icons.wifi_off, color: Colors.white, size: 18),
-                        SizedBox(width: 8),
-                        Text(
-                          'وضع الأوفلاين مفعّل (الإنترنت منقطع)',
-                          style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    InkWell(
-                      onTap: () {
-                        setState(() {
-                          isNetworkConnected = true;
-                          pendingOfflineTrips = 0;
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(backgroundColor: Colors.green, content: Text('تمت إعادة الاتصال ومزامنة البيانات مع السيرفر بنجاح!')),
-                        );
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4)),
-                        child: const Text('مزامنة الآن', style: TextStyle(color: Colors.orange, fontSize: 11, fontWeight: FontWeight.bold)),
-                      ),
-                    )
-                  ],
-                ),
-              ),
-
-            Expanded(child: _buildSelectedTab()),
-          ],
-        ),
-
-        bottomNavigationBar: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          selectedItemColor: Colors.amber.shade800,
-          unselectedItemColor: Colors.grey,
-          onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
-          },
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.navigation), label: 'الرئيسية'),
-            BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet), label: 'المحفظة'),
-            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'الحساب'),
-          ],
-        ),
       ),
     );
   }
 
-  Widget _buildSelectedTab() {
-    if (_currentIndex == 1) return _buildWalletScreen();
-    if (_currentIndex == 2) return _buildProfileScreen();
-    return _buildHomeScreen();
-  }
-
-  Widget _buildHomeScreen() {
-    return Column(
-      children: [
-        Container(
-          margin: const EdgeInsets.all(12),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: isOnline ? Colors.amber.shade50 : Colors.red.shade50,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: isOnline ? Colors.amber.shade700 : Colors.red),
+  // بناء اللوحة السفلية للطلب والتنقل كـ Uber
+  Widget _buildBottomUberSheet() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: widget.isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 15)],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            margin: const EdgeInsets.only(bottom: 15),
+            decoration: BoxDecoration(color: Colors.grey[400], borderRadius: BorderRadius.circular(10)),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                isOnline ? 'الحالة: متصل وجاهز للطلبات' : 'الحالة: غير متصل',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: isOnline ? Colors.amber.shade900 : Colors.red.shade900,
-                ),
-              ),
-              Switch(
-                value: isOnline,
-                activeColor: Colors.amber.shade800,
-                onChanged: (val) {
-                  setState(() => isOnline = val);
-                },
-              ),
-            ],
-          ),
-        ),
 
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12.0),
-          child: Row(
-            children: [
-              Expanded(child: _buildQuickStatCard('أرباح اليوم', '18,500 $selectedCurrency', Icons.monetization_on)),
-              const SizedBox(width: 8),
-              Expanded(child: _buildQuickStatCard('الرحلات', '6 رحلات', Icons.directions_car)),
-              const SizedBox(width: 8),
-              Expanded(child: _buildQuickStatCard('التقييم', '4.9 ★', Icons.star)),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 8),
-
-        // واجهة الرادار والخرائط المباشرة للموقع
-        Expanded(
-          child: Container(
-            margin: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.amber.shade50,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.amber.shade300, width: 2),
+          if (currentStage == BookingState.selectService) ...[
+            const Align(
+              alignment: Alignment.centerRight,
+              child: Text('إلى أين تريد الذهاب؟', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+            const SizedBox(height: 12),
+            TextField(
+              controller: _destinationController,
+              decoration: InputDecoration(
+                hintText: 'أدخل وجهتك (مثال: جولة الرويشان، حدة)',
+                prefixIcon: const Icon(Icons.search, color: Colors.amber),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                filled: true,
+              ),
+              onSubmitted: (val) {
+                if (val.isNotEmpty) {
+                  setState(() {
+                    destinationLocation = val;
+                    currentStage = BookingState.setLocations;
+                  });
+                }
+              },
+            ),
+            const SizedBox(height: 15),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                const Icon(Icons.radar, size: 70, color: Colors.amber),
-                const SizedBox(height: 12),
-                const Text('رادار غمدان للتقاطع والطلبات الحية', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 6),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Text(
-                    currentGPSLocation,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 12, color: Colors.black87),
+                _buildServiceOption('تاكسي', Icons.directions_car, true),
+                _buildServiceOption('باص نقل', Icons.directions_bus, false),
+                _buildServiceOption('شحن طرود', Icons.local_shipping, false),
+              ],
+            ),
+          ] else if (currentStage == BookingState.setLocations) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('الوجهة: $destinationLocation', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                IconButton(icon: const Icon(Icons.close), onPressed: () => setState(() => currentStage = BookingState.selectService)),
+              ],
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.local_taxi, color: Colors.amber, size: 30),
+              title: Text(selectedService, style: const TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: const Text('وصول خلال 3-5 دقائق'),
+              trailing: Text('$estimatedFare $selectedCurrency', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green)),
+            ),
+            const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber,
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () {
+                      setState(() => currentStage = BookingState.searchingDriver);
+                      // محاكاة العثور على سائق بعد 3 ثوانٍ
+                      Future.delayed(const Duration(seconds: 3), () {
+                        if (mounted) setState(() => currentStage = BookingState.tripActive);
+                      });
+                    },
+                    child: const Text('تأكيد طلب الرحلة الآن', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
                 ),
-                const SizedBox(height: 20),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.amber, 
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  ),
-                  onPressed: _showTripRequestModal,
-                  icon: const Icon(Icons.add_location_alt, color: Colors.black),
-                  label: const Text('محاكاة استقبال طلب رحلة جديدة', style: TextStyle(fontWeight: FontWeight.bold)),
+          ] else if (currentStage == BookingState.searchingDriver) ...[
+            const CircularProgressIndicator(color: Colors.amber),
+            const SizedBox(height: 15),
+            const Text('جاري البحث عن أقرب سائق غمدان...', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            TextButton(
+              onPressed: () => setState(() => currentStage = BookingState.selectService),
+              child: const Text('إلغاء الطلب', style: TextStyle(color: Colors.red)),
+            ),
+          ] else if (currentStage == BookingState.tripActive) ...[
+            const ListTile(
+              leading: CircleAvatar(
+                backgroundColor: Colors.black,
+                child: Icon(Icons.person, color: Colors.amber),
+              ),
+              title: Text('السائق: الكابتن أبو غمدان', style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text('نيسان تاكسي | رقم اللوحة: 12345/أ'),
+              trailing: Icon(Icons.phone, color: Colors.green),
+            ),
+            const Divider(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('رمز أمان الرحلة (OTP):', style: TextStyle(color: Colors.grey)),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(color: Colors.amber, borderRadius: BorderRadius.circular(8)),
+                  child: const Text('4821', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black)),
                 ),
               ],
             ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildWalletScreen() {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text('المحفظة متعددة العملات', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.amber, foregroundColor: Colors.black),
-              onPressed: _showAddCurrencyDialog,
-              icon: const Icon(Icons.add, color: Colors.black, size: 18),
-              label: const Text('إضافة عملة', style: TextStyle(fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        ...balances.entries.map((entry) => _buildCurrencyBalanceCard(
-              entry.key,
-              '${entry.value.toStringAsFixed(2)}',
-              _getColorForCurrency(entry.key),
-            )),
-
-        const SizedBox(height: 16),
-
-        Row(
-          children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.amber, foregroundColor: Colors.black, padding: const EdgeInsets.all(12)),
+            const SizedBox(height: 15),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم تقديم طلب سحب الأرباح بنجاح')));
+                  setState(() => currentStage = BookingState.selectService);
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تمت إنهاء الرحلة بنجاح. شكراً لاستخدامك غمدان!')));
                 },
-                icon: const Icon(Icons.call_made, color: Colors.black),
-                label: const Text('سحب أرباح', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: const Text('إنهاء الرحلة'),
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(padding: const EdgeInsets.all(12)),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('شحن المحفظة عبر شبكات الصرافة المحلية')));
-                },
-                icon: const Icon(Icons.add_card),
-                label: const Text('شحن المحفظة'),
-              ),
-            ),
-          ],
-        ),
-      ],
+            )
+          ]
+        ],
+      ),
     );
   }
 
-  Widget _buildProfileScreen() {
-    return ListView(
-      padding: const EdgeInsets.all(16),
+  Widget _buildServiceOption(String title, IconData icon, bool active) {
+    return Column(
       children: [
-        const Center(
-          child: CircleAvatar(
-            radius: 40,
-            backgroundColor: Colors.amber,
-            child: Icon(Icons.person, size: 50, color: Colors.black),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: active ? Colors.amber : Colors.grey[200],
+            borderRadius: BorderRadius.circular(16),
           ),
+          child: Icon(icon, size: 30, color: active ? Colors.black : Colors.grey[700]),
         ),
-        const SizedBox(height: 8),
-        const Center(child: Text('أبو غمدان', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
-        const Center(child: Text('سائق معتمد - صنعاء / إب | باص نيسان', style: TextStyle(color: Colors.grey, fontSize: 12))),
-        const Divider(height: 25),
-
-        ListTile(
-          leading: const Icon(Icons.attach_money),
-          title: const Text('العملة الافتراضية للعرض'),
-          trailing: DropdownButton<String>(
-            value: selectedCurrency,
-            onChanged: (val) {
-              if (val != null) {
-                setState(() => selectedCurrency = val);
-              }
-            },
-            items: balances.keys.map((String currencyKey) {
-              return DropdownMenuItem<String>(
-                value: currencyKey,
-                child: Text(currencyKey, style: const TextStyle(fontSize: 13)),
-              );
-            }).toList(),
-          ),
-        ),
-        const ListTile(
-          leading: Icon(Icons.directions_car),
-          title: Text('بيانات السيارة'),
-          subtitle: Text('نيسان موديل 2006 | لوحة: 12345/أ'),
-        ),
-        ListTile(
-          leading: const Icon(Icons.security),
-          title: const Text('توثيق الهوية (KYC)'),
-          subtitle: const Text('رخصة القيادة والاستمارة: موثقة بنجاح'),
-          trailing: const Icon(Icons.check_circle, color: Colors.green),
-          onTap: _showKYCModal,
-        ),
+        const SizedBox(height: 6),
+        Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
       ],
     );
   }
+}
 
-  Widget _buildQuickStatCard(String title, String value, IconData icon) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-        child: Column(
-          children: [
-            Icon(icon, color: Colors.amber.shade800, size: 22),
-            const SizedBox(height: 4),
-            Text(title, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-            Text(value, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-          ],
-        ),
-      ),
-    );
+// رسم الخريطة المتجهة للرحلة والمواقع
+class LiveUberMapPainter extends CustomPainter {
+  final BookingState stage;
+  LiveUberMapPainter({required this.stage});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bgPaint = Paint()..color = const Color(0xFF242F3E);
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
+
+    final roadPaint = Paint()
+      ..color = Colors.white12
+      ..strokeWidth = 3;
+
+    for (double i = 0; i < size.width; i += 50) {
+      canvas.drawLine(Offset(i, 0), Offset(i, size.height), roadPaint);
+    }
+    for (double j = 0; j < size.height; j += 50) {
+      canvas.drawLine(Offset(0, j), Offset(size.width, j), roadPaint);
+    }
+
+    // رسم موقع العميل دائمًا
+    final userPin = Paint()..color = Colors.blue;
+    canvas.drawCircle(Offset(size.width * 0.5, size.height * 0.45), 10, userPin);
+
+    // مسار أوبـر التفاعلي عند طلب الرحلة
+    if (stage == BookingState.setLocations || stage == BookingState.tripActive) {
+      final routePaint = Paint()
+        ..color = Colors.amber
+        ..strokeWidth = 5
+        ..style = PaintingStyle.stroke;
+
+      final path = Path();
+      path.moveTo(size.width * 0.5, size.height * 0.45);
+      path.lineTo(size.width * 0.75, size.height * 0.25);
+      canvas.drawPath(path, routePaint);
+
+      final destPin = Paint()..color = Colors.red;
+      canvas.drawCircle(Offset(size.width * 0.75, size.height * 0.25), 10, destPin);
+    }
   }
 
-  Widget _buildCurrencyBalanceCard(String title, String amount, Color color) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: CircleAvatar(backgroundColor: color.withOpacity(0.2), child: Icon(Icons.account_balance, color: color)),
-        title: Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-        trailing: Text(amount, style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: color)),
-      ),
-    );
-  }
-
-  Color _getColorForCurrency(String name) {
-    if (name.contains('اليمني')) return Colors.amber.shade800;
-    if (name.contains('السعودي')) return Colors.blue;
-    if (name.contains('الدولار')) return Colors.green;
-    return Colors.teal; 
-  }
-
-  void _showAddCurrencyDialog() {
-    final TextEditingController nameController = TextEditingController();
-    final TextEditingController balanceController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: AlertDialog(
-          title: const Text('إضافة عملة جديدة'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: 'اسم العملة (مثال: اليورو (EUR))', border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: balanceController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'الرصيد الابتدائي', border: OutlineInputBorder()),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.amber, foregroundColor: Colors.black),
-              onPressed: () {
-                if (nameController.text.isNotEmpty) {
-                  setState(() {
-                    balances[nameController.text] = double.tryParse(balanceController.text) ?? 0.0;
-                    selectedCurrency = nameController.text;
-                  });
-                  Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('تمت إضافة عملة "${nameController.text}" بنجاح')),
-                  );
-                }
-              },
-              child: const Text('إضافة وتفعيل', style: TextStyle(fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showTripRequestModal() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          height: 380,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text('طلب رحلة جديدة من زبون!', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  Chip(label: Text('25 ثانية'), backgroundColor: Colors.amber),
-                ],
-              ),
-              const Divider(),
-              const ListTile(
-                leading: Icon(Icons.my_location, color: Colors.blue),
-                title: Text('نقطة الانطلاق: شارع الستين - صنعاء'),
-                subtitle: Text('المسافة: 1.2 كم'),
-              ),
-              const ListTile(
-                leading: Icon(Icons.location_on, color: Colors.red),
-                title: Text('الوجهة: حدة - جولة الرويشان'),
-              ),
-              ListTile(
-                leading: Icon(Icons.payments, color: Colors.amber.shade800),
-                title: Text('الأجرة المتوقعة: 3,500 $selectedCurrency'),
-              ),
-              const Spacer(),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.amber, foregroundColor: Colors.black, padding: const EdgeInsets.all(12)),
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        _showActiveRideDialog();
-                      },
-                      child: const Text('قبول الطلب', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(padding: const EdgeInsets.all(12)),
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text('رفض'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showActiveRideDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: AlertDialog(
-          title: const Text('الرحلة جارية حالياً...'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (!isNetworkConnected)
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  margin: const EdgeInsets.only(bottom: 10),
-                  color: Colors.orange.shade100,
-                  child: const Text('⚠️ وضع الأوفلاين: تسجل الرحلة محلياً وسترفع فور اتصال الإنترنت.', style: TextStyle(fontSize: 11, color: Colors.orange)),
-                ),
-              const Text('أدخل رمز أمان الراكب (OTP):'),
-              const SizedBox(height: 10),
-              const TextField(
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(border: OutlineInputBorder(), hintText: 'رمز التحقق (4 أرقام)'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                if (!isNetworkConnected) setState(() => pendingOfflineTrips++);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(isNetworkConnected ? 'تم إنهاء الرحلة بنجاح وإضافة الأرباح' : 'تم حفظ الرحلة محلياً لعدم وجود إنترنت')),
-                );
-              },
-              child: Text('إنهاء الرحلة وتحصيل المبلغ', style: TextStyle(color: Colors.amber.shade900, fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showOfflineStatusDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: AlertDialog(
-          title: const Text('وضع العمل بدون إنترنت'),
-          content: Text('لديك حالياً ($pendingOfflineTrips) رحلات وحركات مالية مسجلة محلياً على الجوال.\n\nسيقوم التطبيق برفعها ومزامنتها تلقائياً مع السيرفر فور توافر شبكة الإنترنت.'),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('حسناً')),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showStreetMeterDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: AlertDialog(
-          title: const Text('عداد الشارع الذكي للركاب'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('تتبع GPS مباشر لركاب الشارع العام'),
-              const SizedBox(height: 10),
-              const Text('المسافة المقطوعة: 4.5 كم | الوقت: 12 دقيقة'),
-              const SizedBox(height: 10),
-              Text('المستحق: 2,500 $selectedCurrency', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.amber.shade900)),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إغلاق العداد')),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showKYCModal() {
-    showDialog(
-      context: context,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: AlertDialog(
-          title: const Text('توثيق الحساب والوثائق (KYC)'),
-          content: const Text('رخصة القيادة: مأكدة\nاستمارة السيارة: مأكدة\nالهوية الشخصية: مأكدة\n\nالحالة العامة: حسابك موثق رسمياً لدى شركة غمدان.'),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('حسناً')),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showDestinationFilterDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: AlertDialog(
-          title: const Text('تحديد طريق العودة'),
-          content: const Text('فعّل هذا الخيار لتلقي الطلبات والرحلات التي تكون في نفس اتجاه عودتك فقط لتوفير الوقود والوقت.'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                setState(() => destinationFilterActive = !destinationFilterActive);
-                Navigator.pop(ctx);
-              },
-              child: Text(destinationFilterActive ? 'إلغاء التصفية' : 'تفعيل طريق العودة', style: const TextStyle(fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  @override
+  bool shouldRepaint(covariant LiveUberMapPainter oldDelegate) => oldDelegate.stage != stage;
 }
