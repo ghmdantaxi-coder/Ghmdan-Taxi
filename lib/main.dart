@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:geolocator/geolocator.dart';
 
 void main() {
   runApp(const GhmdanTaxiApp());
@@ -73,6 +76,40 @@ class _DriverMainShellState extends State<DriverMainShell> {
     'الريال السعودي (SAR)': 350.0,
     'الدولار الأمريكي (USD)': 90.0,
   };
+
+  // إحداثيات صنعاء الافتراضية
+  LatLng _currentPosition = const LatLng(15.369445, 44.191007);
+  final MapController _mapController = MapController();
+
+  @override
+  void initState() {
+    super.initState();
+    _determinePosition();
+  }
+
+  // دالة جلب الموقع الفعلي للسائق عبر GPS
+  Future<void> _determinePosition() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) return;
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) return;
+    }
+    
+    if (permission == LocationPermission.deniedForever) return;
+
+    Position position = await Geolocator.getCurrentPosition();
+    setState(() {
+      _currentPosition = LatLng(position.latitude, position.longitude);
+    });
+
+    _mapController.move(_currentPosition, 15.0);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -284,46 +321,58 @@ class _DriverMainShellState extends State<DriverMainShell> {
           ),
         ),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
 
+        // عرض خريطة تفاعلية حية وتتبع الموقع بدون الحاجة لملفات Android Manifest
         Expanded(
           child: Stack(
             children: [
-              Center(
-                child: isOnline
-                    ? Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.local_taxi, size: 80, color: Colors.amber.shade700),
-                          const SizedBox(height: 12),
-                          const Text('انت في كل مكان - سرعة وأمان', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey)),
-                          const SizedBox(height: 8),
-                          const Text('...جاري البحث عن ركاب في منطقتك', style: TextStyle(fontSize: 13, color: Colors.grey)),
-                          const SizedBox(height: 16),
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber, foregroundColor: Colors.black, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10)),
-                            onPressed: _showTripRequestModal,
-                            icon: const Icon(Icons.add_location_alt, color: Colors.black),
-                            label: const Text('محاكاة استقبال طلب جديد', style: TextStyle(fontWeight: FontWeight.bold)),
-                          ),
-                          const SizedBox(height: 10),
-                          OutlinedButton.icon(
-                            onPressed: () {
-                              setState(() => isNetworkConnected = !isNetworkConnected);
-                            },
-                            icon: const Icon(Icons.wifi_tethering_off),
-                            label: Text(isNetworkConnected ? 'محاكاة انقطاع الإنترنت' : 'محاكاة عودة الإنترنت'),
-                          )
-                        ],
-                      )
-                    : Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Icon(Icons.power_settings_new, size: 80, color: Colors.grey),
-                          SizedBox(height: 12),
-                          Text('أنت غير متصل حالياً', style: TextStyle(fontSize: 16, color: Colors.grey)),
-                        ],
+              FlutterMap(
+                mapController: _mapController,
+                options: MapOptions(
+                  initialCenter: _currentPosition,
+                  initialZoom: 15.0,
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.ghmdan.taxi',
+                  ),
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: _currentPosition,
+                        width: 50,
+                        height: 50,
+                        child: const Icon(
+                          Icons.location_pin,
+                          color: Colors.red,
+                          size: 45,
+                        ),
                       ),
+                    ],
+                  ),
+                ],
+              ),
+              Positioned(
+                bottom: 16,
+                left: 16,
+                right: 16,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber, 
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      ),
+                      onPressed: _showTripRequestModal,
+                      icon: const Icon(Icons.add_location_alt, color: Colors.black),
+                      label: const Text('محاكاة طلب رحلة جديدة', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -431,7 +480,7 @@ class _DriverMainShellState extends State<DriverMainShell> {
           title: const Text('توثيق الهوية (KYC)'),
           subtitle: const Text('رخصة القيادة والاستمارة: موثقة بنجاح'),
           trailing: const Icon(Icons.check_circle, color: Colors.green),
-          onTap: _showKYCModal, // تم التصحيح هنا من onPressed إلى onTap
+          onTap: _showKYCModal,
         ),
       ],
     );
@@ -656,7 +705,7 @@ class _DriverMainShellState extends State<DriverMainShell> {
               const SizedBox(height: 10),
               const Text('المسافة المقطوعة: 4.5 كم | الوقت: 12 دقيقة'),
               const SizedBox(height: 10),
-              Text('المبلغ المستحق: 2,500 $selectedCurrency', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.amber.shade900)),
+              Text('المستحق: 2,500 $selectedCurrency', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.amber.shade900)),
             ],
           ),
           actions: [
