@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 
 void main() {
@@ -70,6 +68,7 @@ class _DriverMainShellState extends State<DriverMainShell> {
   bool destinationFilterActive = false;
   
   String selectedCurrency = 'الريال اليمني (YER)';
+  String currentGPSLocation = 'جاري تحديد الموقع في صنعاء...';
 
   final Map<String, double> balances = {
     'الريال اليمني (YER)': 45000.0,
@@ -77,17 +76,12 @@ class _DriverMainShellState extends State<DriverMainShell> {
     'الدولار الأمريكي (USD)': 90.0,
   };
 
-  // إحداثيات صنعاء الافتراضية
-  LatLng _currentPosition = const LatLng(15.369445, 44.191007);
-  final MapController _mapController = MapController();
-
   @override
   void initState() {
     super.initState();
     _determinePosition();
   }
 
-  // دالة جلب الموقع الفعلي للسائق عبر GPS
   Future<void> _determinePosition() async {
     bool serviceEnabled;
     LocationPermission permission;
@@ -105,10 +99,8 @@ class _DriverMainShellState extends State<DriverMainShell> {
 
     Position position = await Geolocator.getCurrentPosition();
     setState(() {
-      _currentPosition = LatLng(position.latitude, position.longitude);
+      currentGPSLocation = 'خط العرض: ${position.latitude.toStringAsFixed(4)} | خط الطول: ${position.longitude.toStringAsFixed(4)}';
     });
-
-    _mapController.move(_currentPosition, 15.0);
   }
 
   @override
@@ -323,58 +315,43 @@ class _DriverMainShellState extends State<DriverMainShell> {
 
         const SizedBox(height: 8),
 
-        // عرض خريطة تفاعلية حية وتتبع الموقع بدون الحاجة لملفات Android Manifest
+        // واجهة الرادار والخرائط المباشرة للموقع
         Expanded(
-          child: Stack(
-            children: [
-              FlutterMap(
-                mapController: _mapController,
-                options: MapOptions(
-                  initialCenter: _currentPosition,
-                  initialZoom: 15.0,
-                ),
-                children: [
-                  TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.ghmdan.taxi',
+          child: Container(
+            margin: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.amber.shade50,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.amber.shade300, width: 2),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.radar, size: 70, color: Colors.amber),
+                const SizedBox(height: 12),
+                const Text('رادار غمدان للتقاطع والطلبات الحية', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Text(
+                    currentGPSLocation,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 12, color: Colors.black87),
                   ),
-                  MarkerLayer(
-                    markers: [
-                      Marker(
-                        point: _currentPosition,
-                        width: 50,
-                        height: 50,
-                        child: const Icon(
-                          Icons.location_pin,
-                          color: Colors.red,
-                          size: 45,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              Positioned(
-                bottom: 16,
-                left: 16,
-                right: 16,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.amber, 
-                        foregroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      ),
-                      onPressed: _showTripRequestModal,
-                      icon: const Icon(Icons.add_location_alt, color: Colors.black),
-                      label: const Text('محاكاة طلب رحلة جديدة', style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                  ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 20),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.amber, 
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  ),
+                  onPressed: _showTripRequestModal,
+                  icon: const Icon(Icons.add_location_alt, color: Colors.black),
+                  label: const Text('محاكاة استقبال طلب رحلة جديدة', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
           ),
         ),
       ],
