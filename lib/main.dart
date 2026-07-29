@@ -23,7 +23,7 @@ class _GhmdanTaxiAppState extends State<GhmdanTaxiApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'غمدان تاكسي',
+      title: 'غمدان تاكسي - سرعة وأمان',
       debugShowCheckedModeBanner: false,
       themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
       theme: ThemeData(
@@ -62,7 +62,7 @@ class DriverMainShell extends StatefulWidget {
 class _DriverMainShellState extends State<DriverMainShell> {
   int _currentIndex = 0;
   bool isOnline = true;
-  bool isNetworkConnected = false; 
+  bool isNetworkConnected = true; 
   int pendingOfflineTrips = 2; 
   bool destinationFilterActive = false;
   
@@ -82,7 +82,7 @@ class _DriverMainShellState extends State<DriverMainShell> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('غمدان تاكسي - سرعة وأمان', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+          title: const Text('غمدان تاكسي | سرعة وأمان', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
           backgroundColor: Colors.amber,
           iconTheme: const IconThemeData(color: Colors.black),
           actions: [
@@ -157,7 +157,7 @@ class _DriverMainShellState extends State<DriverMainShell> {
                 onTap: () {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('الاتصال بشركة غمدان: 770000000')),
+                    const SnackBar(content: Text('خط الطوارئ والدعم الفني لشركة غمدان: 770000000')),
                   );
                 },
               ),
@@ -186,7 +186,7 @@ class _DriverMainShellState extends State<DriverMainShell> {
                         Icon(Icons.wifi_off, color: Colors.white, size: 18),
                         SizedBox(width: 8),
                         Text(
-                          'الوضع الخارجي مفعّل (الإنترنت ضعيف/منقطع)',
+                          'وضع الأوفلاين مفعّل (الإنترنت منقطع)',
                           style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
                         ),
                       ],
@@ -198,7 +198,7 @@ class _DriverMainShellState extends State<DriverMainShell> {
                           pendingOfflineTrips = 0;
                         });
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(backgroundColor: Colors.green, content: Text('تمت إعادة الاتصال ومزامنة البيانات محلياً مع السيرفر بنجاح!')),
+                          const SnackBar(backgroundColor: Colors.green, content: Text('تمت إعادة الاتصال ومزامنة البيانات مع السيرفر بنجاح!')),
                         );
                       },
                       child: Container(
@@ -255,7 +255,7 @@ class _DriverMainShellState extends State<DriverMainShell> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                isOnline ? 'متصل (جاهز للطلبات)' : 'غير متصل',
+                isOnline ? 'الحالة: متصل وجاهز للطلبات' : 'الحالة: غير متصل',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -298,7 +298,9 @@ class _DriverMainShellState extends State<DriverMainShell> {
                         children: [
                           Icon(Icons.local_taxi, size: 80, color: Colors.amber.shade700),
                           const SizedBox(height: 12),
-                          const Text('...جاري البحث عن رحلات قريبة', style: TextStyle(fontSize: 15, color: Colors.grey)),
+                          const Text('انت في كل مكان - سرعة وأمان', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey)),
+                          const SizedBox(height: 8),
+                          const Text('...جاري البحث عن ركاب في منطقتك', style: TextStyle(fontSize: 13, color: Colors.grey)),
                           const SizedBox(height: 16),
                           ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(backgroundColor: Colors.amber, foregroundColor: Colors.black, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10)),
@@ -321,7 +323,7 @@ class _DriverMainShellState extends State<DriverMainShell> {
                         children: const [
                           Icon(Icons.power_settings_new, size: 80, color: Colors.grey),
                           SizedBox(height: 12),
-                          Text('أنت غير متصل الآن', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                          Text('أنت غير متصل حالياً', style: TextStyle(fontSize: 16, color: Colors.grey)),
                         ],
                       ),
               ),
@@ -339,7 +341,7 @@ class _DriverMainShellState extends State<DriverMainShell> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('المحفظة والمالية', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            const Text('المحفظة متعددة العملات', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.amber, foregroundColor: Colors.black),
               onPressed: _showAddCurrencyDialog,
@@ -364,10 +366,10 @@ class _DriverMainShellState extends State<DriverMainShell> {
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.amber, foregroundColor: Colors.black, padding: const EdgeInsets.all(12)),
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم إرسال طلب السحب الفوري لحسابك')));
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم تقديم طلب سحب الأرباح بنجاح')));
                 },
                 icon: const Icon(Icons.call_made, color: Colors.black),
-                label: const Text('طلب سحب أرباح', style: TextStyle(fontWeight: FontWeight.bold)),
+                label: const Text('سحب أرباح', style: TextStyle(fontWeight: FontWeight.bold)),
               ),
             ),
             const SizedBox(width: 8),
@@ -375,7 +377,7 @@ class _DriverMainShellState extends State<DriverMainShell> {
               child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(padding: const EdgeInsets.all(12)),
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('شحن المحفظة عن طريق الشبكات المحلية')));
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('شحن المحفظة عبر شبكات الصرافة المحلية')));
                 },
                 icon: const Icon(Icons.add_card),
                 label: const Text('شحن المحفظة'),
@@ -400,12 +402,12 @@ class _DriverMainShellState extends State<DriverMainShell> {
         ),
         const SizedBox(height: 8),
         const Center(child: Text('أبو غمدان', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
-        const Center(child: Text('السائق المعتمد - صنعاء / إب', style: TextStyle(color: Colors.grey))),
+        const Center(child: Text('سائق معتمد - صنعاء / إب | باص نيسان', style: TextStyle(color: Colors.grey, fontSize: 12))),
         const Divider(height: 25),
 
         ListTile(
           leading: const Icon(Icons.attach_money),
-          title: const Text('العملة الافتراضية لعرض الأرباح'),
+          title: const Text('العملة الافتراضية للعرض'),
           trailing: DropdownButton<String>(
             value: selectedCurrency,
             onChanged: (val) {
@@ -416,15 +418,22 @@ class _DriverMainShellState extends State<DriverMainShell> {
             items: balances.keys.map((String currencyKey) {
               return DropdownMenuItem<String>(
                 value: currencyKey,
-                child: Text(currencyKey),
+                child: Text(currencyKey, style: const TextStyle(fontSize: 13)),
               );
             }).toList(),
           ),
         ),
         const ListTile(
           leading: Icon(Icons.directions_car),
-          title: Text('بيانات المركبة'),
-          subtitle: Text('باص نيسان 2006 | لوحة: 12345/أ'),
+          title: Text('بيانات السيارة'),
+          subtitle: Text('نيسان موديل 2006 | لوحة: 12345/أ'),
+        ),
+        ListTile(
+          leading: const Icon(Icons.security),
+          title: const Text('توثيق الهوية (KYC)'),
+          subtitle: const Text('رخصة القيادة والاستمارة: موثقة بنجاح'),
+          trailing: const Icon(Icons.check_circle, color: Colors.green),
+          onPressed: _showKYCModal,
         ),
       ],
     );
@@ -479,34 +488,24 @@ class _DriverMainShellState extends State<DriverMainShell> {
             children: [
               TextField(
                 controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'اسم العملة والرمز (مثال: اليورو الأوروبي (EUR))',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: const InputDecoration(labelText: 'اسم العملة (مثال: اليورو (EUR))', border: OutlineInputBorder()),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: balanceController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'الرصيد الابتدائي',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: const InputDecoration(labelText: 'الرصيد الابتدائي', border: OutlineInputBorder()),
               ),
             ],
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('إلغاء'),
-            ),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.amber, foregroundColor: Colors.black),
               onPressed: () {
                 if (nameController.text.isNotEmpty) {
                   setState(() {
-                    double initialVal = double.tryParse(balanceController.text) ?? 0.0;
-                    balances[nameController.text] = initialVal;
+                    balances[nameController.text] = double.tryParse(balanceController.text) ?? 0.0;
                     selectedCurrency = nameController.text;
                   });
                   Navigator.pop(ctx);
@@ -538,15 +537,15 @@ class _DriverMainShellState extends State<DriverMainShell> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: const [
-                  Text('طلب رحلة جديدة!', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
+                  Text('طلب رحلة جديدة من زبون!', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   Chip(label: Text('25 ثانية'), backgroundColor: Colors.amber),
                 ],
               ),
               const Divider(),
               const ListTile(
                 leading: Icon(Icons.my_location, color: Colors.blue),
-                title: Text('نقطة الالتقاء: شارع الستين - صنعاء'),
-                subtitle: Text('المسافة: 1.2 كم (3 دقائق)'),
+                title: Text('نقطة الانطلاق: شارع الستين - صنعاء'),
+                subtitle: Text('المسافة: 1.2 كم'),
               ),
               const ListTile(
                 leading: Icon(Icons.location_on, color: Colors.red),
@@ -554,7 +553,7 @@ class _DriverMainShellState extends State<DriverMainShell> {
               ),
               ListTile(
                 leading: Icon(Icons.payments, color: Colors.amber.shade800),
-                title: Text('الأجرة المقدرة: 3,500 $selectedCurrency'),
+                title: Text('الأجرة المتوقعة: 3,500 $selectedCurrency'),
               ),
               const Spacer(),
               Row(
@@ -593,7 +592,7 @@ class _DriverMainShellState extends State<DriverMainShell> {
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
         child: AlertDialog(
-          title: const Text('الرحلة جارية...'),
+          title: const Text('الرحلة جارية حالياً...'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -602,9 +601,9 @@ class _DriverMainShellState extends State<DriverMainShell> {
                   padding: const EdgeInsets.all(8),
                   margin: const EdgeInsets.only(bottom: 10),
                   color: Colors.orange.shade100,
-                  child: const Text('⚠️ الرحلة تسجل محلياً وسيتم رفع إحداثياتها فور توفر الإنترنت.', style: TextStyle(fontSize: 12, color: Colors.orange)),
+                  child: const Text('⚠️ وضع الأوفلاين: تسجل الرحلة محلياً وسترفع فور اتصال الإنترنت.', style: TextStyle(fontSize: 11, color: Colors.orange)),
                 ),
-              const Text('يرجى إدخال رمز OTP لبدء التحرك:'),
+              const Text('أدخل رمز أمان الراكب (OTP):'),
               const SizedBox(height: 10),
               const TextField(
                 keyboardType: TextInputType.number,
@@ -618,7 +617,7 @@ class _DriverMainShellState extends State<DriverMainShell> {
                 Navigator.pop(ctx);
                 if (!isNetworkConnected) setState(() => pendingOfflineTrips++);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(isNetworkConnected ? 'تم إنهاء الرحلة بنجاح' : 'تم حفظ بيانات الرحلة محلياً بسبب انقطاع الإنترنت')),
+                  SnackBar(content: Text(isNetworkConnected ? 'تم إنهاء الرحلة بنجاح وإضافة الأرباح' : 'تم حفظ الرحلة محلياً لعدم وجود إنترنت')),
                 );
               },
               child: Text('إنهاء الرحلة وتحصيل المبلغ', style: TextStyle(color: Colors.amber.shade900, fontWeight: FontWeight.bold)),
@@ -635,8 +634,8 @@ class _DriverMainShellState extends State<DriverMainShell> {
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
         child: AlertDialog(
-          title: const Text('نظام العمل بدون إنترنت (Offline)'),
-          content: Text('يوجد حالياً ($pendingOfflineTrips) رحلات وحركات مالية مخزنة على الجوال محلياً.\n\nسيقوم التطبيق بمزامنتها تلقائياً مع السيرفر فور التقاط شبكة الإنترنت.'),
+          title: const Text('وضع العمل بدون إنترنت'),
+          content: Text('لديك حالياً ($pendingOfflineTrips) رحلات وحركات مالية مسجلة محلياً على الجوال.\n\nسيقوم التطبيق برفعها ومزامنتها تلقائياً مع السيرفر فور توافر شبكة الإنترنت.'),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('حسناً')),
           ],
@@ -651,14 +650,15 @@ class _DriverMainShellState extends State<DriverMainShell> {
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
         child: AlertDialog(
-          title: const Text('العداد الذكي لركاب الشارع'),
+          title: const Text('عداد الشارع الذكي للركاب'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('المسافة المقطوعة: 4.5 كم (تتبع GPS محلي)'),
-              const Text('الوقت المنقضي: 12 دقيقة'),
+              const Text('تتبع GPS مباشر لركاب الشارع العام'),
               const SizedBox(height: 10),
-              Text('المبلغ الحالي: 2,500 $selectedCurrency', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.amber.shade900)),
+              const Text('المسافة المقطوعة: 4.5 كم | الوقت: 12 دقيقة'),
+              const SizedBox(height: 10),
+              Text('المبلغ المستحق: 2,500 $selectedCurrency', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.amber.shade900)),
             ],
           ),
           actions: [
@@ -675,8 +675,8 @@ class _DriverMainShellState extends State<DriverMainShell> {
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
         child: AlertDialog(
-          title: const Text('توثيق الحساب (KYC)'),
-          content: const Text('جميع الوثائق مقبولة ومحدثة.'),
+          title: const Text('توثيق الحساب والوثائق (KYC)'),
+          content: const Text('رخصة القيادة: مأكدة\nاستمارة السيارة: مأكدة\nالهوية الشخصية: مأكدة\n\nالحالة العامة: حسابك موثق رسمياً لدى شركة غمدان.'),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('حسناً')),
           ],
@@ -692,14 +692,14 @@ class _DriverMainShellState extends State<DriverMainShell> {
         textDirection: TextDirection.rtl,
         child: AlertDialog(
           title: const Text('تحديد طريق العودة'),
-          content: const Text('حدد وجهتك الأخيرة لتلقي رحلات في مسارك فقط.'),
+          content: const Text('فعّل هذا الخيار لتلقي الطلبات والرحلات التي تكون في نفس اتجاه عودتك فقط لتوفير الوقود والوقت.'),
           actions: [
             TextButton(
               onPressed: () {
                 setState(() => destinationFilterActive = !destinationFilterActive);
                 Navigator.pop(ctx);
               },
-              child: Text(destinationFilterActive ? 'إلغاء التصفية' : 'تفعيل طريق العودة'),
+              child: Text(destinationFilterActive ? 'إلغاء التصفية' : 'تفعيل طريق العودة', style: const TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
         ),
