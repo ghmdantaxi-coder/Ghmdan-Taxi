@@ -66,10 +66,8 @@ class _DriverMainShellState extends State<DriverMainShell> {
   int pendingOfflineTrips = 2; 
   bool destinationFilterActive = false;
   
-  // العملة الافتراضية المختارة
   String selectedCurrency = 'الريال اليمني (YER)';
 
-  // القائمة الديناميكية للعملات والأرصدة
   final Map<String, double> balances = {
     'الريال اليمني (YER)': 45000.0,
     'الريال السعودي (SAR)': 350.0,
@@ -433,7 +431,7 @@ class _DriverMainShellState extends State<DriverMainShell> {
           title: const Text('توثيق الهوية (KYC)'),
           subtitle: const Text('رخصة القيادة والاستمارة: موثقة بنجاح'),
           trailing: const Icon(Icons.check_circle, color: Colors.green),
-          onPressed: _showKYCModal,
+          onTap: _showKYCModal, // تم التصحيح هنا من onPressed إلى onTap
         ),
       ],
     );
